@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>To‑Do List — Pure HTML/CSS/JS</title>
+  <style>
+    :root {
+      --bg: #0f172a;        /* slate-900 */
+      --card: #111827;      /* gray-900 */
+      --muted: #9ca3af;     /* gray-400 */
+      --text: #e5e7eb;      /* gray-200 */
+      --accent: #22c55e;    /* green-500 */
+      --accent-2: #60a5fa;  /* blue-400 */
+      --danger: #ef4444;    /* red-500 */
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1000px 500px at 80% -10%, rgba(96,165,250,.15), transparent),
+                  radial-gradient(1200px 700px at 0% 100%, rgba(34,197,94,.12), transparent),
+                  var(--bg);
+      color: var(--text);
+      display: grid; place-items: center; padding: 24px;
+    }
+    .app {
+      width: 100%; max-width: 820px; background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border: 1px solid rgba(255,255,255,.08); border-radius: var(--radius);
+      backdrop-filter: blur(6px); box-shadow: var(--shadow);
+      padding: 28px; position: relative; overflow: hidden;
+    }
+    .app::after {
+      content: ""; position: absolute; inset: -40% -40% auto auto; width: 500px; height: 500px;
+      background: radial-gradient(closest-side, rgba(96,165,250,.12), transparent 70%);
+      filter: blur(20px); pointer-events: none; z-index: 0;
+    }
+    header { position: relative; z-index: 1; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    h1 { font-size: clamp(22px, 2.5vw, 32px); margin: 0; letter-spacing: .4px; }
+    .muted { color: var(--muted); font-size: 13px; }
+
+    /* Input Row */
+    .row { margin-top: 16px; display: grid; grid-template-columns: 1fr auto; gap: 12px; position: relative; z-index: 1; }
+    .input {
+      background: #0b1220; border: 1px solid rgba(255,255,255,.08); color: var(--text);
+      padding: 14px 16px; border-radius: 12px; outline: none; font-size: 15px;
+    }
+    .input::placeholder { color: #6b7280; }
+    .btn {
+      border: none; cursor: pointer; padding: 12px 16px; border-radius: 12px; font-weight: 600; font-size: 14px;
+      color: #0b1220; background: linear-gradient(180deg, var(--accent), #16a34a);
+      box-shadow: 0 8px 20px rgba(34,197,94,.35);
+    }
+    .btn:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* Controls */
+    .controls { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 8px; background: #0b1220; border: 1px solid rgba(255,255,255,.08);
+      padding: 8px 12px; border-radius: 999px; font-size: 13px; color: var(--text);
+    }
+    .segmented { display: inline-flex; border: 1px solid rgba(255,255,255,.08); border-radius: 999px; overflow: hidden; }
+    .segmented button {
+      background: #0b1220; color: var(--text); border: none; padding: 8px 12px; cursor: pointer; font-size: 13px;
+    }
+    .segmented button.active { background: rgba(96,165,250,.18); color: #dbeafe; }
+
+    /* List */
+    ul { list-style: none; padding: 0; margin: 18px 0 8px; }
+    .item { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 12px; margin-bottom: 10px;
+            background: #0b1220; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; }
+    .item.completed .label { text-decoration: line-through; opacity: .6; }
+    .label { font-size: 15px; line-height: 1.4; }
+    .checkbox { width: 18px; height: 18px; accent-color: var(--accent); }
+    .actions { display: flex; gap: 6px; }
+    .icon-btn { background: transparent; border: 1px solid rgba(255,255,255,.1); color: var(--text); cursor: pointer; padding: 6px 10px; border-radius: 10px; font-size: 12px; }
+    .icon-btn:hover { border-color: rgba(255,255,255,.25); }
+    .icon-danger { border-color: rgba(239,68,68,.45); color: #fecaca; }
+
+    footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+    .small { font-size: 12px; color: var(--muted); }
+
+    /* Edit field */
+    .edit-input { width: 100%; padding: 10px 12px; font-size: 15px; border: 1px dashed rgba(255,255,255,.25); border-radius: 10px; background: #0b1220; color: var(--text); }
+
+    @media (max-width: 520px) {
+      .row { grid-template-columns: 1fr; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" aria-labelledby="app-title">
+    <header>
+      <h1 id="app-title">📝 To‑Do List</h1>
+      <span class="muted" aria-live="polite" id="summary">0 items</span>
+    </header>
+
+    <div class="row" role="group" aria-label="Add a new task">
+      <input id="newTodo" class="input" type="text" placeholder="What do you need to do? (Press Enter to add)" autocomplete="off" />
+      <button id="addBtn" class="btn" title="Add task">Add</button>
+    </div>
+
+    <div class="controls">
+      <div class="segmented" role="tablist" aria-label="Filter tasks">
+        <button class="active" data-filter="all" role="tab" aria-selected="true">All</button>
+        <button data-filter="active" role="tab" aria-selected="false">Active</button>
+        <button data-filter="completed" role="tab" aria-selected="false">Completed</button>
+      </div>
+      <button id="clearCompleted" class="pill" title="Remove completed tasks">Clear completed</button>
+      <span class="pill small" id="persist">Changes auto‑saved</span>
+    </div>
+
+    <ul id="list" aria-live="polite" aria-label="To‑do items"></ul>
+
+    <footer>
+      <span class="small">Tip: Double‑click a task to edit. Press <strong>Enter</strong> to save or <strong>Esc</strong> to cancel.</span>
+      <button id="exportBtn" class="icon-btn" title="Export tasks as JSON">Export</button>
+      <input id="importInput" type="file" accept="application/json" hidden />
+      <button id="importBtn" class="icon-btn" title="Import tasks from JSON">Import</button>
+    </footer>
+  </main>
+
+  <script>
+    // --- Storage helpers ---
+    const STORAGE_KEY = 'todos-v1';
+    const $ = (sel, root=document) => root.querySelector(sel);
+    const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+    function load() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) ?? []; }
+      catch { return []; }
+    }
+    function save(items) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      $('#persist').textContent = 'Saved ✓';
+      setTimeout(() => { $('#persist').textContent = 'Changes auto‑saved'; }, 900);
+    }
+
+    // --- State ---
+    let items = load();
+    let filter = 'all';
+
+    const listEl = $('#list');
+    const newInput = $('#newTodo');
+    const addBtn = $('#addBtn');
+    const summaryEl = $('#summary');
+
+    function uid() { return Math.random().toString(36).slice(2, 10); }
+
+    function render() {
+      listEl.innerHTML = '';
+      const filtered = items.filter(it => filter === 'all' || (filter === 'active' ? !it.done : it.done));
+      for (const it of filtered) listEl.appendChild(renderItem(it));
+      const remaining = items.filter(it => !it.done).length;
+      summaryEl.textContent = ${items.length} item${items.length!==1?'s':''} • ${remaining} left;
+      $$('.segmented button').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === filter));
+    }
+
+    function renderItem(it) {
+      const li = document.createElement('li');
+      li.className = 'item' + (it.done ? ' completed' : '');
+      li.dataset.id = it.id;
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.className = 'checkbox'; cb.checked = it.done; cb.title = 'Toggle complete';
+      cb.addEventListener('change', () => { it.done = cb.checked; save(items); render(); });
+
+      const label = document.createElement('div');
+      label.className = 'label'; label.textContent = it.text;
+      label.addEventListener('dblclick', () => beginEdit(li, it));
+
+      const actions = document.createElement('div'); actions.className = 'actions';
+      const editBtn = button('Edit', () => beginEdit(li, it));
+      const delBtn  = button('Delete', () => remove(it.id), 'icon-danger');
+      actions.append(editBtn, delBtn);
+
+      li.append(cb, label, actions);
+      return li;
+    }
+
+    function button(text, onClick, extraClass='') {
+      const b = document.createElement('button');
+      b.className = 'icon-btn ' + extraClass; b.textContent = text; b.addEventListener('click', onClick); return b;
+    }
+
+    function beginEdit(li, it) {
+      li.classList.remove('completed');
+      li.innerHTML = '';
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'checkbox'; cb.checked = it.done; cb.disabled = true;
+      const input = document.createElement('input'); input.className = 'edit-input'; input.value = it.text; input.setAttribute('aria-label', 'Edit task');
+      const actions = document.createElement('div'); actions.className = 'actions';
+      const saveBtn = button('Save', () => commit());
+      const cancelBtn = button('Cancel', () => render());
+      actions.append(saveBtn, cancelBtn);
+      li.append(cb, input, actions);
+      input.focus();
+
+      function commit() {
+        const v = input.value.trim();
+        if (!v) { remove(it.id); return; }
+        it.text = v; save(items); render();
+      }
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') commit();
+        if (e.key === 'Escape') render();
+      });
+      input.addEventListener('blur', () => commit());
+    }
+
+    function add(text) {
+      const v = (text ?? newInput.value).trim();
+      if (!v) return;
+      items.unshift({ id: uid(), text: v, done: false });
+      newInput.value = '';
+      save(items); render();
+    }
+
+    function remove(id) {
+      items = items.filter(x => x.id !== id);
+      save(items); render();
+    }
+
+    // --- Events ---
+    addBtn.addEventListener('click', () => add());
+    newInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') add(); });
+
+    $$('.segmented button').forEach(btn => btn.addEventListener('click', () => { filter = btn.dataset.filter; render(); }));
+
+    $('#clearCompleted').addEventListener('click', () => { items = items.filter(it => !it.done); save(items); render(); });
+
+    // Export / Import
+    $('#exportBtn').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(items, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'todos.json'; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+    });
+
+    $('#importBtn').addEventListener('click', () => $('#importInput').click());
+    $('#importInput').addEventListener('change', (e) => {
+      const file = e.target.files?.[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (Array.isArray(data)) { items = data.filter(Boolean).map(x => ({ id: x.id||uid(), text: String(x.text||'').trim(), done: !!x.done })); save(items); render(); }
+        } catch {}
+      };
+      reader.readAsText(file);
+    });
+
+    // Seed empty state with a friendly example once
+    if (!items.length && !localStorage.getItem('todos-seeded')) {
+      items = [
+        { id: uid(), text: 'Explore this To‑Do app ✨', done: false },
+        { id: uid(), text: 'Double‑click a task to edit', done: false },
+        { id: uid(), text: 'Mark tasks complete with the checkbox', done: true },
+      ];
+      localStorage.setItem('todos-seeded', '1');
+      save(items);
+    }
+
+    render();
+  </script>
+</body>
+</html>
